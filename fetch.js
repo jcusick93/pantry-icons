@@ -43,7 +43,7 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
         if (index > -1) {
           existingComponentNames.splice(index, 1)
         }
-      } else {
+      } else{
         const svg = (await axios(componentUrl)).data
         fs.writeFileSync(filePath, svg)
         console.log(`✅ Created ${fileName}`)
@@ -51,7 +51,9 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
       }
     }
 
-    console.log(`${totalIconsAdded} icons added`)
+    let iconNamed = (totalIconsAdded === 1) ? "icon" : "icons"
+
+    console.log(`${totalIconsAdded++} ${iconNamed} added`)
 
     // Delete old SVG files that are no longer used
     for (const componentName of existingComponentNames) {
@@ -62,3 +64,4 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
     }
   })()
 })
+

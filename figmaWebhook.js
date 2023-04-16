@@ -13,8 +13,11 @@ app.use(bodyParser.json())
 
 app.post('/', (request, response) => {
   if (request.body.passcode === passcode) {
-    const { file_name, timestamp, last_user, version } = request.body
-    console.log(`${file_name} was updated at ${timestamp}. Last updated by ${last_user}. Version ${version}`)
+    const { file_name, timestamp, triggered_by, version, description } = request.body
+    handle_value = triggered_by["handle"]
+    console.log(handle_value)
+  
+    console.log(`${file_name} was updated at ${timestamp}. Last updated by ${triggered_by}. ${description}`)
     response.sendStatus(200)
   } else {
     response.sendStatus(403)

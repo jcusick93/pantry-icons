@@ -27,6 +27,7 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
     const res = await axios(`https://api.figma.com/v1/images/${figmaDocId}/?ids=${ids}&format=svg`, options)
     const urls = res.data.images
     let totalIconsAdded = 0
+    let totalIconsRemoved = 0
 
     for (const [componentId, componentUrl] of Object.entries(urls)) {
       const componentNode = file.components[componentId]
@@ -37,7 +38,16 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
       console.log(`Component Name: ${componentName} - Component ID: ${componentId}`)
 
       if (fs.existsSync(filePath)) {
-        console.log(`✅ ${fileName} synced`)
+        const existingSvg = fs.readFileSync(filePath, 'utf-8')
+        const newSvg = (await axios(componentUrl)).data
+
+        if (existingSvg === newSvg) {
+          console.log(`👌 No changes needed for ${fileName}`)
+        } else {
+          fs.writeFileSync(filePath, newSvg)
+          console.log(`✅ Updated ${fileName}`)
+        }
+
         // Remove the component name from the existingComponentNames array
         const index = existingComponentNames.indexOf(componentName)
         if (index > -1) {
@@ -51,9 +61,9 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
       }
     }
 
-    let iconNamed = (totalIconsAdded === 1) ? "icon" : "icons"
+    let iconsAddedPluralOrSingle = (totalIconsAdded === 1) ? "icon" : "icons"
 
-    console.log(`${totalIconsAdded++} ${iconNamed} added`)
+    console.log(`${totalIconsAdded} ${iconsAddedPluralOrSingle} added`)
 
     // Delete old SVG files that are no longer used
     for (const componentName of existingComponentNames) {
@@ -61,7 +71,9 @@ axios(`https://api.figma.com/v1/files/${figmaDocId}`, options).then(res => {
       const filePath = path.join(__dirname, 'src/svgs', fileName)
       fs.unlinkSync(filePath)
       console.log(`❌ Removed ${fileName}`)
+      totalIconsRemoved++
     }
+  let iconsRemovedPluralOrSingle = (totalIconsRemoved === 1) ? "icon" : "icons"
+    console.log(`${totalIconsRemoved} ${iconsRemovedPluralOrSingle} removed`)
   })()
 })
-

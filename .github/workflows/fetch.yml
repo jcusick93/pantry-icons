@@ -12,7 +12,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Run script
       run: |
-        npm fetch
+        npm run fetch
       env:
         FIGMA_API_KEY: ${{ secrets.FIGMA_API_KEY }}
         FIGMA_DOC_ID: ${{ secrets.FIGMA_DOC_ID }}

@@ -1,8 +1,9 @@
 name: Run Figma webhook and create a pull request
 
 on:
-  webhook:
-    url: https://hooks.zapier.com/hooks/catch/15069498/3udysaz/github-webhook
+ repository_dispatch:
+    types:
+      - webhook
 
 jobs:
   run-script:

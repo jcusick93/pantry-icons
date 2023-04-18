@@ -1,27 +1,21 @@
-name: Run Figma webhook and create a pull request
-
-on:
- repository_dispatch:
-    types:
-      - webhook
-
 jobs:
-  run-script:
+  call-zapier-webhook:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Run script
-      run: |
-        npm run fetch
-      env:
-        FIGMA_API_KEY: ${{ secrets.FIGMA_API_KEY }}
-        FIGMA_DOC_ID: ${{ secrets.FIGMA_DOC_ID }}
-    - name: Create Pull Request
-      uses: peter-evans/create-pull-request@v3.7.0
-      with:
-        commit-message: 'Update SVGs from Figma'
-        branch: update-svgs
-        title: 'Update SVGs from Figma'
-        body: 'This PR updates SVG files from Figma.'
-        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+    - name: Call Zapier Webhook
+        uses: gpuliyar/zapier-webhook-action@v1.0.0
+        with:
+          # Zapier Webhook ID https://hooks.zapier.com/hooks/catch/{webhook-id} (Mandatory)
+          webhook-id: https://hooks.zapier.com/hooks/catch/15069498/3udysaz/
+
+          # Webhook call Http method (Optional)
+          # Allowed http method verbs - GET, POST, PUT
+          # default - GET
+          method: POST
+ 
+          # If the developer prefers getting an empty response (Optional)
+          # default - false (not silent)
+          silent: false
+
+          # Payload to send to the Zapier webhook (Optional)
+          message: this action is awesome

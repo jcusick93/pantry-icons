@@ -1,0 +1,19 @@
+name: Run Figma webhook
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Run script
+      run: |
+        npm install
+        node index.js
+      env:
+        FIGMA_API_KEY: ${{ secrets.FIGMA_API_KEY }}
+        FIGMA_DOC_ID: ${{ secrets.FIGMA_DOC_ID }}

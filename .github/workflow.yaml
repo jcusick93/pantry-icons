@@ -23,4 +23,4 @@ jobs:
         branch: update-svgs
         title: 'Update SVGs from Figma'
         body: 'This PR updates SVG files from Figma.'
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}

@@ -32,54 +32,64 @@ axios
   });
 
 // recursive function to list out all the child nodes of a given node
-function listNodes(node) {
+function listNodes(node, componentName) {
   // check if the node has any children
   if (node.children) {
     // loop through each child node
     node.children.forEach((child) => {
       // check if the child is a ComponentSet
       if (child.type === "COMPONENT_SET") {
-        // loop through each child of the ComponentSet
-        child.children.forEach((component) => {
-          // check if the child is a Component
-          if (component.type === "COMPONENT") {
-            // make the API request to get the SVG for the Component
+        // update the componentName variable
+        componentName = child.name;
+        // recursively list out all the child nodes of the ComponentSet
+        listNodes(child, componentName);
+      } else if (child.type === "COMPONENT") {
+        // make the API request to get the image URL for the Component
+        axios
+          .get(`${apiUrl}/images/${figmaDocId}?ids=${child.id}&format=svg`, {
+            headers: {
+              "X-Figma-Token": figmaApiKey,
+            },
+          })
+          .then((response) => {
+            // extract the image URL from the response
+            const imageUrl = response.data.images[child.id];
+            // make another API request to get the SVG data
             axios
-              .get(
-                `${apiUrl}/images/${figmaDocId}?ids=${component.id}&format=svg`,
-
-                {
-                  headers: {
-                    "X-Figma-Token": figmaApiKey,
-                  },
-                  responseType: "text",
-                }
-              )
+              .get(imageUrl)
               .then((response) => {
-                // get the SVG path from the response
-                const svgPath = JSON.parse(response.data).images[
-                  `${component.id}`
-                ];
-
-                // save the SVG path to a file
-                const fileName = `./src/svgs/${child.name}-${component.name}.svg`;
-                fs.writeFile(fileName, svgPath, (error) => {
+                const componentNameFormatted = componentName.toLowerCase();
+                const childNameFormatted = child.name
+                  .split(",")
+                  .map((arg) => arg.split("=")[1])
+                  .join("-");
+                // create the file name in the desired format
+                const fileName = `${componentNameFormatted}-${childNameFormatted}.svg`;
+                fs.writeFile(fileName, response.data, (error) => {
                   if (error) {
                     console.log(error);
                   } else {
-                    console.log(`File saved: ${fileName}`);
+                    console.log(`✅ Created ${fileName}`);
                   }
                 });
               })
               .catch((error) => {
                 console.log(error);
               });
-          }
-        });
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       } else {
-        // recursively call this function on each child node
-        listNodes(child);
+        // recursively list out all the child nodes of the current node
+        listNodes(child, componentName);
       }
     });
   }
+}
+
+function formatFileName(name) {
+  const args = name.split(",");
+  const formattedArgs = args.map((arg) => arg.split("=")[1]);
+  return formattedArgs.join("-").toLowerCase();
 }

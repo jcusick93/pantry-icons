@@ -89,9 +89,3 @@ function listNodes(node, componentName) {
     });
   }
 }
-
-function formatFileName(name) {
-  const args = name.split(",");
-  const formattedArgs = args.map((arg) => arg.split("=")[1]);
-  return formattedArgs.join("-").toLowerCase();
-}

@@ -1,6 +1,7 @@
 const axios = require("axios");
 const fs = require("fs");
 require("dotenv").config();
+const path = require("path");
 
 // the api key stored in .env
 const figmaApiKey = process.env.FIGMA_API_KEY;
@@ -65,7 +66,8 @@ function listNodes(node, componentName) {
                   .join("-");
                 // create the file name in the desired format
                 const fileName = `${componentNameFormatted}-${childNameFormatted}.svg`;
-                fs.writeFile(fileName, response.data, (error) => {
+                const filePath = path.join(__dirname, "src/svgs", fileName);
+                fs.writeFile(filePath, response.data, (error) => {
                   if (error) {
                     console.log(error);
                   } else {

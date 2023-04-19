@@ -14,6 +14,9 @@ const apiUrl = "https://api.figma.com/v1";
 // set up the file key for the file you want to access
 const fileKey = process.env.FIGMA_DOC_ID;
 
+// create an empty object to store existing file names
+const existingFileNames = {};
+
 // make the API request to get the file
 axios
   .get(`${apiUrl}/files/${fileKey}`, {
@@ -26,7 +29,7 @@ axios
     const rootNode = response.data.document;
 
     // recursively list out all the child nodes of the root node
-    listNodes(rootNode);
+    listNodes(rootNode, "");
   })
   .catch((error) => {
     console.log(error);
@@ -74,6 +77,9 @@ function listNodes(node, componentName) {
                     console.log(`✅ Created ${fileName}`);
                   }
                 });
+                // update the existing file names object
+                existingFileNames[`${child.id}_${componentNameFormatted}`] =
+                  fileName;
               })
               .catch((error) => {
                 console.log(error);
@@ -88,10 +94,13 @@ function listNodes(node, componentName) {
       }
     });
   }
-}
 
-function formatFileName(name) {
-  const args = name.split(",");
-  const formattedArgs = args.map((arg) => arg.split("=")[1]);
-  return formattedArgs.join("-").toLowerCase();
+  // Remove any files whose names don't match the new names
+  const files = fs.readdirSync(path.join(__dirname, "src/svgs"));
+  for (const file of files) {
+    if (!Object.values(existingFileNames).includes(file)) {
+      fs.unlinkSync(path.join(__dirname, "src/svgs", file));
+      console.log(`❌ Deleted ${file}`);
+    }
+  }
 }

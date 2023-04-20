@@ -66,7 +66,38 @@ function listNodes(node, componentName) {
                   .join("-");
                 // create the file name in the desired format
                 const fileName = `${componentNameFormatted}-${childNameFormatted}.svg`;
-                const filePath = path.join(__dirname, "src/svgs", fileName);
+                const dirPath = path.join(__dirname, "src/svgs");
+
+                // Get an array of existing file names in the directory
+                const existingFileNames = fs.readdirSync(dirPath);
+
+                // Get an array of new file names generated from Figma
+                const newFileNames = node.children
+                  .filter((child) => child.type === "COMPONENT")
+                  .map((child) => {
+                    const componentNameFormatted = componentName.toLowerCase();
+                    const childNameFormatted = child.name
+                      .split(",")
+                      .map((arg) => arg.split("=")[1])
+                      .join("-");
+                    return `${componentNameFormatted}-${childNameFormatted}.svg`;
+                  });
+
+                // Filter out the files that match with the new file names
+                const filesToRemove = existingFileNames.filter(
+                  (name) => !newFileNames.includes(name)
+                );
+
+                if (filesToRemove.length > 0) {
+                  // Delete the files that don't match
+                  filesToRemove.forEach((fileName) => {
+                    const filePath = path.join(dirPath, fileName);
+                    fs.unlinkSync(filePath);
+                    console.log(`❌ Removed ${fileName}`);
+                  });
+                }
+
+                const filePath = path.join(dirPath, fileName);
                 fs.writeFile(filePath, response.data, (error) => {
                   if (error) {
                     console.log(error);

@@ -4,29 +4,24 @@ require("dotenv").config();
 const path = require("path");
 
 // the api key stored in .env
-
 const figmaApiKey = process.env.FIGMA_API_KEY;
 
-// the doc id stored in .env
-
 // set up the API endpoint URL and your personal access token
-
-const apiUrl = process.env.FIGMA_API_URL;
+const apiUrl = "https://api.figma.com/v1";
 
 // set up the file key for the file you want to access
-
 const fileKey = process.env.FIGMA_FILE_KEY;
 
+// the directory path
 const dirPath = path.join(__dirname, "dist/svgs");
 
 // Get an array of existing file names in the directory
-
 const existingFileNames = fs.readdirSync(dirPath);
 
+// initializes the file names array
 var filesNamesFromFigma = [];
 
 // make the API request to get the file
-
 axios
 
   .get(`${apiUrl}/files/${fileKey}`, {
@@ -37,11 +32,12 @@ axios
 
   .then((response) => {
     // get the root node of the file
+    const rootNode = response.data.document;
 
-    const rootNode = response.data.document; // recursively list out all the child nodes of the root node
-
+    // function to recursively list out all the child nodes of the root node
     listNodes(rootNode);
 
+    // removes unwanted icons function
     removeUnWantedIcons();
   })
 
@@ -50,7 +46,6 @@ axios
   });
 
 // recursive function to list out all the child nodes of a given node
-
 function listNodes(node, componentName) {
   // check if the node has any children
 

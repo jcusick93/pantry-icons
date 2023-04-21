@@ -1,28 +1,23 @@
 const axios = require("axios");
-
 const fs = require("fs");
-
 require("dotenv").config();
-
 const path = require("path");
 
 // the api key stored in .env
 
-const figmaApiKey = "figd_epP6l-vMqZSOnxBwYTTv-VHeNwYgtvxly5a8sbbA";
+const figmaApiKey = process.env.FIGMA_API_KEY;
 
 // the doc id stored in .env
 
-const figmaDocId = "uDqIDfconaSGF5rLbeCzfO";
-
 // set up the API endpoint URL and your personal access token
 
-const apiUrl = "https://api.figma.com/v1";
+const apiUrl = process.env.FIGMA_API_URL;
 
 // set up the file key for the file you want to access
 
-const fileKey = "uDqIDfconaSGF5rLbeCzfO";
+const fileKey = process.env.FIGMA_FILE_KEY;
 
-const dirPath = path.join(__dirname, "src/svgs");
+const dirPath = path.join(__dirname, "dist/svgs");
 
 // Get an array of existing file names in the directory
 
@@ -93,7 +88,7 @@ function listNodes(node, componentName) {
 
         axios
 
-          .get(`${apiUrl}/images/${figmaDocId}?ids=${child.id}&format=svg`, {
+          .get(`${apiUrl}/images/${fileKey}?ids=${child.id}&format=svg`, {
             headers: {
               "X-Figma-Token": figmaApiKey,
             },

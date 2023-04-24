@@ -1,13 +1,11 @@
 const fs = require("fs");
-const { JSDOM } = require("jsdom");
 const path = require("path");
-
 const srcDir = "./dist/svgs";
 const distDir = "./dist/svgs";
 
 let totalCleaned = 0;
 
-console.log(`✅ Executing cleaning script...`);
+console.log(`✅ Executing cleaning script...\n`);
 
 fs.readdir(srcDir, (err, files) => {
   if (err) {
@@ -24,56 +22,46 @@ fs.readdir(srcDir, (err, files) => {
         return;
       }
 
-      const dom = new JSDOM(data, { contentType: "image/svg+xml" });
+      // Create a new SVG element
+      let svgData = "<svg";
 
-      const { document } = dom.window;
-      function removeAttributes(element) {
-        element.removeAttribute("fill");
-        element.removeAttribute("viewBox");
-        element.removeAttribute("clip-rule");
-        element.removeAttribute("fill-rule");
-        const children = element.children;
-        const paths = element.querySelectorAll("path");
-        if (paths.length > 1) {
-          // Merge all paths into one
-          let mergedPath = "";
-          paths.forEach((path) => {
-            mergedPath += path.getAttribute("d");
-          });
-          // Remove all but the first path element
-          paths.forEach((path, index) => {
-            if (index !== 0) {
-              path.remove();
-            }
-          });
-          // Set the d attribute of the first path element to the merged path
-          paths[0].setAttribute("d", mergedPath);
-        } else if (paths.length === 1) {
-          // Extract the d attribute from the path within the g element
-          const gElement = element.querySelector("g");
-          if (gElement) {
-            const pathElement = gElement.querySelector("path");
-            if (pathElement) {
-              const dAttribute = pathElement.getAttribute("d");
-              // Remove the g and clipPath elements
-              gElement.remove();
-              const clipPathElement = element.querySelector("clipPath");
-              if (clipPathElement) {
-                clipPathElement.remove();
-              }
-              // Set the d attribute of the remaining path element to the extracted d attribute
-              paths[0].setAttribute("d", dAttribute);
-            }
-          }
-        }
-        for (let i = 0; i < children.length; i++) {
-          removeAttributes(children[i]);
-        }
+      // Extract height, width, and viewBox attributes
+      const matchHeight = data.match(/height="[^"]*"/);
+      const matchWidth = data.match(/width="[^"]*"/);
+      const matchViewBox = data.match(/viewBox="[^"]*"/);
+      if (matchHeight) {
+        svgData += ` ${matchHeight[0]}`;
       }
-      const svgElement = document.querySelector("svg");
-      removeAttributes(svgElement);
+      if (matchWidth) {
+        svgData += ` ${matchWidth[0]}`;
+      }
+      if (matchViewBox) {
+        svgData += ` ${matchViewBox[0]}`;
+      }
+
+      // Close the SVG element tag
+      svgData += ">";
+
+      // Extract paths and merge them into one
+      const matchPaths = data.match(/<path.*?d="([^"]*)".*?>/gi);
+      if (matchPaths) {
+        let mergedPath = "";
+        matchPaths.forEach((matchPath) => {
+          const pathD = matchPath.match(/d="([^"]*)"/)[1];
+          mergedPath += pathD;
+        });
+        // Add the merged path to the SVG element
+        svgData += `<path d="${mergedPath}"/>`;
+      }
+
+      // Close the SVG element
+      svgData += "</svg>";
+
+      // Remove empty lines
+      svgData = svgData.replace(/^\s*\n/gm, "");
+
       const outputFilePath = path.join(distDir, file);
-      fs.writeFile(outputFilePath, dom.serialize(), (err) => {
+      fs.writeFile(outputFilePath, svgData, (err) => {
         if (err) {
           console.error(err);
           return;
@@ -83,7 +71,7 @@ fs.readdir(srcDir, (err, files) => {
         // Increment the totalCleaned count and log the message after all files have been processed
         totalCleaned++;
         if (totalCleaned === files.length) {
-          console.log(`✨ Cleaned a total of: ${totalCleaned} icons.`);
+          console.log(`\n✨ Cleaned a total of: ${totalCleaned} icons.\n`);
         }
       });
     });

@@ -3,23 +3,31 @@ const fs = require("fs");
 require("dotenv").config();
 const path = require("path");
 
-// the api key stored in .env
+// The api key stored in .env
 const figmaApiKey = process.env.FIGMA_API_KEY;
 
-// set up the API endpoint URL and your personal access token
+// Sets up the API endpoint URL and your personal access token
 const apiUrl = "https://api.figma.com/v1";
 
-// set up the file key for the file you want to access
+// Sets up the file key for the file you want to access
 const fileKey = process.env.FIGMA_FILE_KEY;
 
-// the directory path
+// The directory path
 const dirPath = path.join(__dirname, "dist/svgs");
 
 // Get an array of existing file names in the directory
 const existingFileNames = fs.readdirSync(dirPath);
 
 // initializes the file names array
-var filesNamesFromFigma = [];
+let fileNamesFromFigma = [];
+
+// Initializes the total icons synced variable
+let totalIconsSynced = 0;
+
+// Initializes the total icons removed variable
+let totalIconsRemoved = 0;
+
+console.log(`✅ Syncing icons...\n`);
 
 // make the API request to get the file
 axios
@@ -78,7 +86,7 @@ function listNodes(node, componentName) {
 
         const fileName = `${componentNameFormatted}-${childNameFormatted}.svg`;
 
-        filesNamesFromFigma.push(fileName);
+        fileNamesFromFigma.push(fileName);
         // make the API request to get the image URL for the Component
 
         axios
@@ -105,7 +113,13 @@ function listNodes(node, componentName) {
                   if (error) {
                     console.log(error);
                   } else {
-                    console.log(`✅ Created ${fileName}`);
+                    console.log(`✅ Synced ${fileName}`);
+                    totalIconsSynced++;
+                    if (totalIconsSynced === fileNamesFromFigma.length) {
+                      console.log(
+                        `\n✨ Synced a total of ${totalIconsSynced} icons.\n`
+                      );
+                    }
                   }
                 });
               })
@@ -128,11 +142,11 @@ function listNodes(node, componentName) {
 }
 
 function removeUnWantedIcons() {
-  if (filesNamesFromFigma.length != 0) {
+  if (fileNamesFromFigma.length != 0) {
     // Filter out the files that match with the new file names
 
     const filesToRemove = existingFileNames.filter(
-      (name) => !filesNamesFromFigma.includes(name)
+      (name) => !fileNamesFromFigma.includes(name)
     );
 
     if (filesToRemove.length > 0) {
@@ -145,6 +159,10 @@ function removeUnWantedIcons() {
           fs.unlinkSync(filePath);
 
           console.log(`❌ Removed ${fileName}`);
+          totalIconsRemoved++;
+          if (totalIconsRemoved === filesToRemove.length) {
+            console.log(`\n🗑 Removed a total of ${totalIconsRemoved} icons.\n`);
+          }
         }
       });
     }

@@ -80,11 +80,11 @@ function listNodes(node, componentName) {
 
           .map((arg) => arg.split("=")[1])
 
-          .join("-");
+          .join("_");
 
         // create the file name in the desired format
 
-        const fileName = `${componentNameFormatted}-${childNameFormatted}.svg`;
+        const fileName = `${componentNameFormatted}_${childNameFormatted}.svg`;
 
         fileNamesFromFigma.push(fileName);
         // make the API request to get the image URL for the Component
@@ -144,14 +144,12 @@ function listNodes(node, componentName) {
 function removeUnWantedIcons() {
   if (fileNamesFromFigma.length != 0) {
     // Filter out the files that match with the new file names
-
     const filesToRemove = existingFileNames.filter(
       (name) => !fileNamesFromFigma.includes(name)
     );
 
     if (filesToRemove.length > 0) {
       // Delete the files that don't match
-
       filesToRemove.forEach((fileName) => {
         const filePath = path.join(dirPath, fileName);
 

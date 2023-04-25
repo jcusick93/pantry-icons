@@ -1,37 +1,38 @@
 const fs = require("fs");
 const { JSDOM } = require("jsdom");
+const pathModule = require("path");
+
 const svgsDir = "./dist/svgs";
 const androidDir = "./dist/android";
 
 console.log(`🤖 Building XML files for Android...\n`);
 
-fs.readdir(svgsDir, (err, files) => {
-  if (err) {
-    console.error(err);
-    return;
-  }
+// Get an array of existing SVG and XML file names in their respective directories
+const existingSVGFiles = fs.readdirSync(svgsDir);
+const existingXMLFiles = fs.readdirSync(androidDir);
 
-  // Initializes the count of icons synced.
-  const totalIcons = files.length;
-  let totalIconsSynced = 0;
+// Loop through SVG files and create corresponding XML files
+let totalIconsSynced = 0;
 
-  files.forEach((file) => {
-    const svg = fs.readFileSync(`${svgsDir}/${file}`, "utf8");
-    const { document } = new JSDOM(svg).window;
+existingSVGFiles.forEach((svgFileName) => {
+  if (!svgFileName.endsWith(".svg")) return;
 
-    const svgElem = document.querySelector("svg");
-    const widthPx = svgElem.getAttribute("width");
-    const heightPx = svgElem.getAttribute("height");
-    const viewBox = svgElem.getAttribute("viewBox");
-    const [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight] =
-      viewBox.split(" ");
+  const svgFilePath = pathModule.join(svgsDir, svgFileName);
+  const svg = fs.readFileSync(svgFilePath, "utf8");
+  const { document } = new JSDOM(svg).window;
 
-    const width = widthPx ? widthPx.replace("px", "") : viewBoxWidth;
-    const height = heightPx ? heightPx.replace("px", "") : viewBoxHeight;
+  const svgElem = document.querySelector("svg");
+  const widthPx = svgElem.getAttribute("width");
+  const heightPx = svgElem.getAttribute("height");
+  const viewBox = svgElem.getAttribute("viewBox");
+  const [viewBoxX, viewBoxY, viewBoxWidth, viewBoxHeight] = viewBox.split(" ");
 
-    const path = document.querySelector("path").getAttribute("d");
+  const width = widthPx ? widthPx.replace("px", "") : viewBoxWidth;
+  const height = heightPx ? heightPx.replace("px", "") : viewBoxHeight;
 
-    const vectorXml = `<vector xmlns:android="http://schemas.android.com/apk/res/android"
+  const path = document.querySelector("path").getAttribute("d");
+
+  const vectorXml = `<vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="${width}dp"
     android:height="${height}dp"
     android:viewportWidth="${viewBoxWidth}"
@@ -41,13 +42,38 @@ fs.readdir(svgsDir, (err, files) => {
         android:pathData="${path}" />
 </vector>`;
 
-    const fileName = file.replace(".svg", ".xml");
-    fs.writeFileSync(`${androidDir}/${fileName}`, vectorXml);
-    console.log(`✅ Synced ${fileName}`);
+  const xmlFileName = svgFileName.replace(".svg", ".xml");
+  const xmlFilePath = pathModule.join(androidDir, xmlFileName);
 
-    totalIconsSynced++;
-    if (totalIconsSynced === totalIcons) {
-      console.log(`\n✨ Synced a total of ${totalIconsSynced} icons.\n`);
-    }
-  });
+  fs.writeFileSync(xmlFilePath, vectorXml);
+  console.log(`✅ Synced ${xmlFileName}`);
+
+  totalIconsSynced++;
 });
+
+console.log(`\n✨ Synced a total of ${totalIconsSynced} icons.\n`);
+
+// Loop through existing XML files and remove any that are no longer needed
+if (existingXMLFiles.length > 0) {
+  const filesToRemove = existingXMLFiles.filter(
+    (xmlFileName) =>
+      !existingSVGFiles.includes(xmlFileName.replace(".xml", ".svg"))
+  );
+
+  if (filesToRemove.length > 0) {
+    let totalIconsRemoved = 0;
+
+    filesToRemove.forEach((xmlFileName) => {
+      const xmlFilePath = pathModule.join(androidDir, xmlFileName);
+
+      if (fs.existsSync(xmlFilePath)) {
+        fs.unlinkSync(xmlFilePath);
+
+        console.log(`❌ Removed ${xmlFileName}`);
+        totalIconsRemoved++;
+      }
+    });
+
+    console.log(`\n🗑 Removed a total of ${totalIconsRemoved} icons.\n`);
+  }
+}

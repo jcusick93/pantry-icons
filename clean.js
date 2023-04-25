@@ -60,14 +60,13 @@ fs.readdir(srcDir, (err, files) => {
       // Remove empty lines
       svgData = svgData.replace(/^\s*\n/gm, "");
 
-      const outputFilePath = path.join(distDir, file);
+      const outputFilePath = path.join(distDir, path.basename(file)); // extract file name
       fs.writeFile(outputFilePath, svgData, (err) => {
         if (err) {
           console.error(err);
           return;
         }
-        console.log(`🧽 Successfully cleaned SVG file: ${outputFilePath}`);
-
+        console.log(`🧽 Cleaned ${path.basename(outputFilePath)}`); // extract file name
         // Increment the totalCleaned count and log the message after all files have been processed
         totalCleaned++;
         if (totalCleaned === files.length) {

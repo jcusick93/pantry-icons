@@ -72,7 +72,7 @@ function listNodes(node, componentName) {
       } else if (child.type === "COMPONENT") {
         const componentNameFormatted = componentName
           .toLowerCase()
-          .replace(/\s+/g, "-");
+          .replace(/\s+/g, "_");
 
         const childNameFormatted = child.name
 

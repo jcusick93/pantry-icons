@@ -47,7 +47,6 @@ existingSVGFiles.forEach((svgFileName) => {
 
   fs.writeFileSync(xmlFilePath, vectorXml);
   console.log(`✅ Synced ${xmlFileName}`);
-
   totalIconsSynced++;
 });
 

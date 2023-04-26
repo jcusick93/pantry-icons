@@ -13,6 +13,9 @@ const apiUrl = "https://api.figma.com/v1";
 // Sets up the file key for the file you want to access
 const fileKey = process.env.FIGMA_FILE_KEY;
 
+// The label for the console timer
+const timerMessage = `⏰ Completed build in`;
+
 // Counter for API calls
 let apiCallsCounter = 0;
 
@@ -33,6 +36,9 @@ let totalIconsRemoved = 0;
 
 console.log(`✅ Syncing icons...\n`);
 
+// Start the timer
+console.time(timerMessage);
+
 // make the API request to get the file
 getWithDelay(`${apiUrl}/files/${fileKey}`, {
   headers: {
@@ -45,9 +51,6 @@ getWithDelay(`${apiUrl}/files/${fileKey}`, {
 
     // function to recursively list out all the child nodes of the root node
     await listNodes(rootNode);
-
-    // removes unwanted icons function
-    removeUnWantedIcons();
   })
   .catch((error) => {
     console.log(error);
@@ -134,6 +137,9 @@ async function listNodes(node, componentName) {
                         console.log(
                           `\n✨ Synced a total of ${totalIconsSynced} icons.\n`
                         );
+                        removeUnWantedIcons();
+                        console.timeEnd(timerMessage);
+                        console.log("\n");
                       }
                     }
                   });
@@ -157,7 +163,7 @@ async function listNodes(node, componentName) {
 function removeUnWantedIcons() {
   if (fileNamesFromFigma.length != 0) {
     const filesToRemove = existingFileNames.filter(
-      (name) => !fileNamesFromFigma.includes(name)
+      (name) => name.endsWith(".svg") && !fileNamesFromFigma.includes(name)
     );
 
     if (filesToRemove.length > 0) {

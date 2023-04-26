@@ -2,6 +2,7 @@ const axios = require("axios");
 const fs = require("fs");
 require("dotenv").config();
 const path = require("path");
+const readline = require("readline");
 
 // The api key stored in .env
 const figmaApiKey = process.env.FIGMA_API_KEY;
@@ -12,13 +13,16 @@ const apiUrl = "https://api.figma.com/v1";
 // Sets up the file key for the file you want to access
 const fileKey = process.env.FIGMA_FILE_KEY;
 
+// Counter for API calls
+let apiCallsCounter = 0;
+
 // The directory path
 const dirPath = path.join(__dirname, "dist/svgs");
 
 // Get an array of existing file names in the directory
 const existingFileNames = fs.readdirSync(dirPath);
 
-// initializes the file names array
+// Initializes the file names array
 let fileNamesFromFigma = [];
 
 // Initializes the total icons synced variable
@@ -30,126 +34,133 @@ let totalIconsRemoved = 0;
 console.log(`✅ Syncing icons...\n`);
 
 // make the API request to get the file
-axios
-
-  .get(`${apiUrl}/files/${fileKey}`, {
-    headers: {
-      "X-Figma-Token": figmaApiKey,
-    },
-  })
-
-  .then((response) => {
+getWithDelay(`${apiUrl}/files/${fileKey}`, {
+  headers: {
+    "X-Figma-Token": figmaApiKey,
+  },
+})
+  .then(async (response) => {
     // get the root node of the file
     const rootNode = response.data.document;
 
     // function to recursively list out all the child nodes of the root node
-    listNodes(rootNode);
+    await listNodes(rootNode);
 
     // removes unwanted icons function
     removeUnWantedIcons();
   })
-
   .catch((error) => {
     console.log(error);
   });
 
-// recursive function to list out all the child nodes of a given node
-function listNodes(node, componentName) {
-  // check if the node has any children
+// Delay function
+async function delay(ms) {
+  return new Promise((resolve) => {
+    let countdown = ms / 1000;
+    const countdownInterval = setInterval(() => {
+      readline.clearLine(process.stdout, 0);
+      readline.cursorTo(process.stdout, 0);
+      process.stdout.write(
+        `⏰ Waiting ${countdown} seconds before making more API calls.`
+      );
 
-  if (node.children) {
-    // loop through each child node
-
-    node.children.forEach((child) => {
-      // check if the child is a ComponentSet
-
-      if (child.type === "COMPONENT_SET") {
-        // update the componentName variable
-
-        componentName = child.name; // recursively list out all the child nodes of the ComponentSet
-
-        listNodes(child, componentName);
-      } else if (child.type === "COMPONENT") {
-        const componentNameFormatted = componentName
-          .toLowerCase()
-          .replace(/\s+/g, "_");
-
-        const childNameFormatted = child.name
-
-          .split(",")
-
-          .map((arg) => arg.split("=")[1])
-
-          .join("_");
-
-        // create the file name in the desired format
-
-        const fileName = `${componentNameFormatted}_${childNameFormatted}.svg`;
-
-        fileNamesFromFigma.push(fileName);
-        // make the API request to get the image URL for the Component
-
-        axios
-
-          .get(`${apiUrl}/images/${fileKey}?ids=${child.id}&format=svg`, {
-            headers: {
-              "X-Figma-Token": figmaApiKey,
-            },
-          })
-
-          .then((response) => {
-            // extract the image URL from the response
-            const imageUrl = response.data.images[child.id];
-
-            // make another API request to get the SVG data
-            axios
-
-              .get(imageUrl)
-
-              .then((response) => {
-                const filePath = path.join(dirPath, fileName);
-
-                fs.writeFile(filePath, response.data, (error) => {
-                  if (error) {
-                    console.log(error);
-                  } else {
-                    console.log(`✅ Synced ${fileName}`);
-                    totalIconsSynced++;
-                    if (totalIconsSynced === fileNamesFromFigma.length) {
-                      console.log(
-                        `\n✨ Synced a total of ${totalIconsSynced} icons.\n`
-                      );
-                    }
-                  }
-                });
-              })
-
-              .catch((error) => {
-                console.log(error);
-              });
-          })
-
-          .catch((error) => {
-            console.log(error);
-          });
-      } else {
-        // recursively list out all the child nodes of the current node
-
-        listNodes(child, componentName);
+      countdown--;
+      if (countdown < 0) {
+        clearInterval(countdownInterval);
+        readline.clearLine(process.stdout, 0);
+        readline.cursorTo(process.stdout, 0);
+        resolve();
       }
-    });
+    }, 1000);
+  });
+}
+
+// Modified axios.get call to control rate limiting
+async function getWithDelay(url, config) {
+  if (apiCallsCounter >= 20) {
+    await delay(45000);
+    apiCallsCounter = 0;
   }
+
+  apiCallsCounter++;
+  return axios.get(url, config);
+}
+
+// recursive function to list out all the child nodes of a given node
+async function listNodes(node, componentName) {
+  return new Promise(async (resolve) => {
+    if (node.children) {
+      for (const child of node.children) {
+        if (child.type === "COMPONENT_SET") {
+          componentName = child.name;
+          await listNodes(child, componentName);
+        } else if (child.type === "COMPONENT") {
+          const componentNameFormatted = componentName
+            .toLowerCase()
+            .replace(/\s+/g, "_");
+
+          const childNameFormatted = child.name
+            .split(",")
+            .map((arg) => arg.split("=")[1])
+            .join("_");
+
+          const fileName = `${componentNameFormatted}_${childNameFormatted}.svg`;
+
+          fileNamesFromFigma.push(fileName);
+
+          await getWithDelay(
+            `${apiUrl}/images/${fileKey}?ids=${child.id}&format=svg`,
+            {
+              headers: {
+                "X-Figma-Token": figmaApiKey,
+              },
+            }
+          )
+            .then(async (response) => {
+              const imageUrl = response.data.images[child.id];
+
+              await axios
+                .get(imageUrl)
+                .then((response) => {
+                  const filePath = path.join(dirPath, fileName);
+
+                  fs.writeFile(filePath, response.data, (error) => {
+                    if (error) {
+                      console.log(error);
+                    } else {
+                      console.log(`✅ Synced ${fileName}`);
+                      totalIconsSynced++;
+                      if (totalIconsSynced === fileNamesFromFigma.length) {
+                        console.log(
+                          `\n✨ Synced a total of ${totalIconsSynced} icons.\n`
+                        );
+                      }
+                    }
+                  });
+                })
+                .catch((error) => {
+                  console.log(error);
+                });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        } else {
+          await listNodes(child, componentName);
+        }
+      }
+    }
+    resolve();
+  });
 }
 
 function removeUnWantedIcons() {
   if (fileNamesFromFigma.length != 0) {
-    // Filter out the files that match with the new file names
     const filesToRemove = existingFileNames.filter(
       (name) => !fileNamesFromFigma.includes(name)
     );
 
     if (filesToRemove.length > 0) {
-      // Delete the files that don't match
       filesToRemove.forEach((fileName) => {
         const filePath = path.join(dirPath, fileName);
 

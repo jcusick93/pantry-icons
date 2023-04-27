@@ -20,7 +20,7 @@ const timerMessage = `⏰ Completed build in`;
 let apiCallsCounter = 0;
 
 // The directory path
-const dirPath = path.join(__dirname, "dist/svgs");
+const dirPath = path.join(__dirname, "src/svgs");
 
 // Get an array of existing file names in the directory
 const existingFileNames = fs.readdirSync(dirPath);

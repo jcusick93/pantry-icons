@@ -8,7 +8,7 @@ const iosDir = "./dist/ios";
 let totalProcessed = 0;
 let totalRemoved = 0;
 
-console.log(`🍎 Building IOS icons...\n`);
+console.log(`🍎 Building iOS icons...\n`);
 
 // Remove SVG files that are no longer needed
 const existingIosFiles = fs.readdirSync(iosDir);

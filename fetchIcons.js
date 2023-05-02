@@ -81,7 +81,7 @@ async function delay(ms) {
 // Modified axios.get call to control rate limiting
 async function getWithDelay(url, config) {
   if (apiCallsCounter >= 100) {
-    await delay(45000);
+    await delay(60000);
     apiCallsCounter = 0;
   }
 

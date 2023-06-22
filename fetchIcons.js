@@ -20,7 +20,7 @@ const timerMessage = `⏰ Completed build in`;
 let apiCallsCounter = 0;
 
 // The directory path
-const dirPath = path.join(__dirname, "src/svgs");
+const dirPath = "./src/svgs";
 
 // Get an array of existing file names in the directory
 const existingFileNames = fs.readdirSync(dirPath);
@@ -40,11 +40,12 @@ console.log(`✅ Syncing icons...\n`);
 console.time(timerMessage);
 
 // make the API request to get the file
-getWithDelay(`${apiUrl}/files/${fileKey}`, {
-  headers: {
-    "X-Figma-Token": figmaApiKey,
-  },
-})
+axios
+  .get(`${apiUrl}/files/${fileKey}`, {
+    headers: {
+      "X-Figma-Token": figmaApiKey,
+    },
+  })
   .then(async (response) => {
     // get the root node of the file
     const rootNode = response.data.document;
@@ -55,39 +56,6 @@ getWithDelay(`${apiUrl}/files/${fileKey}`, {
   .catch((error) => {
     console.log(error);
   });
-
-// Delay function
-async function delay(ms) {
-  return new Promise((resolve) => {
-    let countdown = ms / 1000;
-    const countdownInterval = setInterval(() => {
-      readline.clearLine(process.stdout, 0);
-      readline.cursorTo(process.stdout, 0);
-      process.stdout.write(
-        `⏰ Waiting ${countdown} seconds before making more API calls.`
-      );
-
-      countdown--;
-      if (countdown < 0) {
-        clearInterval(countdownInterval);
-        readline.clearLine(process.stdout, 0);
-        readline.cursorTo(process.stdout, 0);
-        resolve();
-      }
-    }, 1000);
-  });
-}
-
-// Modified axios.get call to control rate limiting
-async function getWithDelay(url, config) {
-  if (apiCallsCounter >= 100) {
-    await delay(60000);
-    apiCallsCounter = 0;
-  }
-
-  apiCallsCounter++;
-  return axios.get(url, config);
-}
 
 // recursive function to list out all the child nodes of a given node
 async function listNodes(node, componentName) {
@@ -103,6 +71,7 @@ async function listNodes(node, componentName) {
             .replace(/\s+/g, "_");
 
           const childNameFormatted = child.name
+            .toLowerCase()
             .split(",")
             .map((arg) => arg.split("=")[1])
             .join("_");
@@ -111,14 +80,12 @@ async function listNodes(node, componentName) {
 
           fileNamesFromFigma.push(fileName);
 
-          await getWithDelay(
-            `${apiUrl}/images/${fileKey}?ids=${child.id}&format=svg`,
-            {
+          await axios
+            .get(`${apiUrl}/images/${fileKey}?ids=${child.id}&format=svg`, {
               headers: {
                 "X-Figma-Token": figmaApiKey,
               },
-            }
-          )
+            })
             .then(async (response) => {
               const imageUrl = response.data.images[child.id];
 
